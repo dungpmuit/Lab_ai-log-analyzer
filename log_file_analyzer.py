@@ -6,21 +6,21 @@ client = genai.Client()
 def add_to_blacklist(ip,reason):
     with open("blacklisted_ips.txt","a") as f:
         f.write(f"{ip}-{reason}\n")
-    print(f"    [SOAR Action] Da them IP {ip} vao danh sach den (blacklisted_ips.txt)")
+    print(f"    [SOAR Action] Added IP {ip} to blacklist (blacklisted_ips.txt)")
 
 def analyze_with_ai(ip,port,failed_logins,reason):
     prompt= f"""
-    Bạn là một chuyển gia phân tích an ninh mạng SOC (Security Operations Center).
-    Hệ thống giám sát vừa phát hiện một dòng log bất thường:
-    - Địa chỉ IP: {ip}
-    - Port truy cập: {port}
-    - Số lần đăng nhập thất bại: {failed_logins}
-    - Lý do cảnh báo từ hệ thống: {reason}
+    You is a professional network analyzer SOC (Security Operations Center).
+    Detect system just discovered an unusual log entry:
+    - IP: {ip}
+    - Port access: {port}
+    - Failed logins: {failed_logins}
+    - Reason from system: {reason}
 
-    Hãy đưa ra phân tích ngắn gọn theo 3 ý chính:
-    1. [Mối đe dọa]: Đây là kiểu tấn công gì?
-    2. [Mức độ rủi ro]: Ngay hiểm ở mức nào (Thấp/Trung bình/Cao/Nghiêm trọng)?
-    3. [Hành động khuyến nghị]: Quản trị viên nên làm gì ngay lập tức?
+    Provide a brief analysis covering three key points:
+    1. [Threat]: What type of attack is this?
+    2. [Risk Level]: What is the level of danger (Low/Medium/High/Critical)?
+    3. [Recommended Action]: What should administrators do immediately?
     """
     try:
         response=client.models.generate_content(
@@ -29,10 +29,10 @@ def analyze_with_ai(ip,port,failed_logins,reason):
         )
         return response.text
     except Exception as e:
-        return f"[Lỗi kết nối AI API]: {e}"
+        return f"[Error connect AI API]: {e}"
 
 def scan_logs_from_file(file_path):
-    print("---- BAT DAU QUET LOG TU FILE ----")
+    print("---- Scan log from file ----")
      
     with open(file_path,"r") as file:
         for line in file:
@@ -47,23 +47,23 @@ def scan_logs_from_file(file_path):
             reason = ""
             if failed_logins > 3 :
                 is_suspicious= True
-                reason = f"Dang nhap sai qua 3 lan ({failed_logins} lan)"
+                reason = f"Failed logins than 3 access attempts({failed_logins} lan)"
             elif port==22:
                 is_suspicious= True
-                reason = f"Do quet cong SSH (port {port})"
+                reason = f"Scan SSH port (port {port})"
 
             if not is_suspicious:
-                print(f"[+] IP {ip}: An toan")
+                print(f"[+] IP {ip}: Safe")
             else:
                 add_to_blacklist(ip,reason)
-                print(f"[!] CANH BAO IP {ip}: {reason}")
-                print("    ---> [AI Agent] Dang phan tich moi de doa...")
+                print(f"[!] WARNING IP {ip}: {reason}")
+                print("    ---> [AI Agent] Analyzing threats...")
 
                 ai_analysis=analyze_with_ai(ip,port,failed_logins,reason)
 
                 print("\n" + "="*50)
-                print(f"    KET QUA PHAN TICH TU AI DANH CHO IP {ip}")
+                print(f"    Result analysis from IP: {ip}")
                 print("=" * 50)
                 print(ai_analysis)
                 print("="*50 + "\n")
-scan_logs_from_file("server_logs.txt")i
+scan_logs_from_file("server_logs.txt")
