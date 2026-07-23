@@ -1,12 +1,50 @@
 import os
 from google import genai
+import requests
+from dotenv import load_dotenv
 
-client = genai.Client()
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def add_to_blacklist(ip,reason):
     with open("blacklisted_ips.txt","a") as f:
         f.write(f"{ip}-{reason}\n")
     print(f"    [SOAR Action] Added IP {ip} to blacklist (blacklisted_ips.txt)")
+
+def send_telegram_alert(ip,threat_level,reason):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("[!] Not Telegram Token or Chat ID, skip send warning")
+        return
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+
+    message = (
+        f"🚨 *AI SOC AGENT ALERT* 🚨\n\n"
+        f"📌 *Suspicious IP :* `{ip}`\n"
+        f"⚠️ *Threat levl:* {threat_level}\n"
+        f"📝 *Analyze AI:* {reason}\n\n"
+        f"✅ *Action:* Automatic added `blacklisted_ips.txt`"
+    )
+
+    payload={
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "Markdown"
+    }
+
+    try:
+        response = requests.post(url, json=payload, timeout =5)
+        if response.status_code == 200:
+            print(f"[+] Sent warning Telegram message for IP {ip} success")
+        else:
+            print(f"[-] Error send Telegram message: {response.text}")
+    except Exception as e:
+        print(f"[!] Error connect Telegram API: {e}")
 
 def analyze_with_ai(ip,port,failed_logins,reason):
     prompt= f"""
@@ -47,7 +85,7 @@ def scan_logs_from_file(file_path):
             reason = ""
             if failed_logins > 3 :
                 is_suspicious= True
-                reason = f"Failed logins than 3 access attempts({failed_logins} lan)"
+                reason = f"Failed logins than 3 access attempts({failed_logins} attempts)"
             elif port==22:
                 is_suspicious= True
                 reason = f"Scan SSH port (port {port})"
@@ -66,4 +104,10 @@ def scan_logs_from_file(file_path):
                 print("=" * 50)
                 print(ai_analysis)
                 print("="*50 + "\n")
+
+                send_telegram_alert(
+                    ip=ip,
+                    threat_level="High / Critical",
+                    reason=reason
+                )
 scan_logs_from_file("server_logs.txt")
