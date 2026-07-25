@@ -1,7 +1,9 @@
+import time
 import os
 from google import genai
 import requests
 from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 load_dotenv()
 
@@ -69,9 +71,30 @@ def analyze_with_ai(ip,port,failed_logins,reason):
     except Exception as e:
         return f"[Error connect AI API]: {e}"
 
-def scan_logs_from_file(file_path):
-    print("---- Scan log from file ----")
-     
+def process_single_log_entry(ip,port,failed_logins,reason):
+    print(f"[!] [Thread Worker] Processing threat for IP: {ip} ({reason})")
+
+    add_to_blacklist(ip,reason)
+
+    ai_analysis= analyze_with_ai(ip,port,failed_logins,reason)
+
+    print("\n" + "="*50)
+    print(f"    Result analysis from IP: {ip}")
+    print("=" * 50)
+    print(ai_analysis)
+    print("="*50 + "\n")
+
+    send_telegram_alert(
+        ip=ip,
+        threat_level="High / Critical",
+        reason=reason
+    )
+    return ip
+
+def scan_logs_from_file(file_path,max_workers=5):
+    start_time=time.time()
+    suspicious_tasks=[]
+    print("---- Scan log from file (Multi-threaded) ----\n")
     with open(file_path,"r") as file:
         for line in file:
             line = line.strip()
@@ -93,21 +116,16 @@ def scan_logs_from_file(file_path):
             if not is_suspicious:
                 print(f"[+] IP {ip}: Safe")
             else:
-                add_to_blacklist(ip,reason)
-                print(f"[!] WARNING IP {ip}: {reason}")
-                print("    ---> [AI Agent] Analyzing threats...")
-
-                ai_analysis=analyze_with_ai(ip,port,failed_logins,reason)
-
-                print("\n" + "="*50)
-                print(f"    Result analysis from IP: {ip}")
-                print("=" * 50)
-                print(ai_analysis)
-                print("="*50 + "\n")
-
-                send_telegram_alert(
-                    ip=ip,
-                    threat_level="High / Critical",
-                    reason=reason
-                )
+                suspicious_tasks.append((ip,port,failed_logins,reason))
+    if suspicious_tasks:
+        print(f"\n[!] Found {len(suspicious_tasks)} suspicious IPs. Starting {max_workers} worker threads... ")
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(process_single_log_entry,task[0],task[1],task[2],task[3])
+                for task in suspicious_tasks
+            ]
+            for future in as_completed(futures):
+                completed_ip=future.result()
+    execution_time=time.time()-start_time
+    print(f"\n [COMPLETED] Finished scanning logs in {execution_time:.2f} seconds!")
 scan_logs_from_file("server_logs.txt")
