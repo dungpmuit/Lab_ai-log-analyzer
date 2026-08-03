@@ -14,6 +14,10 @@ The project is performance-optimized using **Multi-threading** to process large 
 * SOAR Active Response**: Automatically extracts and appends policy-violating IP addresses to a local blacklist `blacklisted_ips.txt`.
 * Real-time Telegram Alerting**: Connects with the Telegram Bot API to deliver imediate push notifications to SOC Analysts upon dectecting threats.
 * Security Best Practices**: Manages sensitive credentials (API Keys and Bot Tokens) securely via environment variables ('.env') to prevent secret exposure on public repositories.
+* **AI Security & Guardrails (Production-Ready)**:
+  * **Prompt Isolation (XML Delimiters)**: Wraps raw log entries inside `<raw_log_data>` tags to prevent **Indirect Prompt Injection (OWASP LLM01)** and instruction hijacking.
+  * **Structured Output Enforcement (JSON Schema)**: Enforces strict JSON responses from Gemini to ensure deterministic output parsing and prevent execution crashes.
+  * **Deterministic Tuning**: Configured with low `temperature` for consistent, objective threat scoring.
 
 ## System Architecture & Workflow
 
@@ -80,6 +84,15 @@ The project is performance-optimized using **Multi-threading** to process large 
 ### 2. Run the AI SOC Agent:
     python3 log_file_analyzer.py
 
+### 3. Sample AI Output (Structured JSON)
+```json
+{
+  "threat_type": "SSH Brute-Force",
+  "risk_level": "HIGH",
+  "recommended_action": "Isolate the host immediately and block SSH access.",
+  "summary": "Internal IP 192.168.1.99 performed 100 failed login attempts on port 22."
+}    
+
 ## Project Structure
     Lab_ai-log-analyzer/
     ├── .env                  # Environment variables (Excluded from Git)
@@ -96,6 +109,12 @@ The project is performance-optimized using **Multi-threading** to process large 
 * Dung Pham Minh
 * Github: @dungpmuit
 
+## 🛣️ Roadmap
 
+- [x] Multi-threaded log processing
+- [x] SOAR Automation (Blacklist + Telegram Alerts)
+- [x] AI Guardrails (XML Isolation & JSON Output Enforcement)
+- [ ] Threat Intelligence Enrichment (AbuseIPDB API Integration)
+- [ ] Vector DB / Semantic Search for anomaly detection
 
 
