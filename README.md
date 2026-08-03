@@ -103,7 +103,7 @@ The project is performance-optimized using **Multi-threading** to process large 
     ├── blacklisted_ips.txt   # Output file containing blocked IP addresses
     ├── requirements.txt      # Python dependencies list
     └── README.md             # Project documentation
-    ```
+    
 
 ## Author
 
