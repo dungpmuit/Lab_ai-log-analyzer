@@ -96,7 +96,16 @@ def process_single_log_entry(ip,port,failed_logins,reason):
     print("=" * 50)
     print(ai_analysis)
     print("="*50 + "\n")
-
+    if isinstance(ai_analysis, dict):
+        import json
+        print(json.dumps(ai_analysis, indent=2))
+        threat_level = ai_analysis.get('risk_level', 'High')
+        summary_reason = ai_analysis.get('summary', reason)
+    else:
+        print(ai_analysis)
+        threat_level = "High / Critical"
+        summary_reason = reason
+    print("="*50 + "\n")
     send_telegram_alert(
         ip=ip,
         threat_level="High / Critical",
