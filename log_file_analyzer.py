@@ -82,7 +82,12 @@ def analyze_with_ai(ip,port,failed_logins,reason):
         )
         return response.text
     except Exception as e:
-        return f"[Error connect AI API]: {e}"
+        return {
+            "threat_type": "API Error",
+            "risk_level": "HIGH",
+            "recommended_action": "Manual check",
+            "summary": f"[Error connect AI API]: {e}"
+        }
 
 def process_single_log_entry(ip,port,failed_logins,reason):
     print(f"[!] [Thread Worker] Processing threat for IP: {ip} ({reason})")
