@@ -91,7 +91,8 @@ The project is performance-optimized using **Multi-threading** to process large 
   "risk_level": "HIGH",
   "recommended_action": "Isolate the host immediately and block SSH access.",
   "summary": "Internal IP 192.168.1.99 performed 100 failed login attempts on port 22."
-}    
+}
+```
 
 ## Project Structure
     Lab_ai-log-analyzer/
